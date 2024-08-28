@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    container_name: api-gateway
+    image: api-gateway-image:1.0
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://token_db:5432/TokenStorage
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=0000
+      - SPRING_REDIS_HOST=token-redis-cache
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=superPassword
+      - JWT_SECRET=superSecret
+      - JWT_HEADER=Authorization
+      - DISCOVERY_SERVER_URL=http://discovery-server:8761/eureka
+      - ZIPKIN_URL=http://zipkin:9411
+      - DISCOVERY_SERVER_URL_PORT=http://discovery-server:8761
+    depends_on:
+      - token_db
+      - token-redis-cache
+    networks:
+      - my_network
+
+  token_db:
+    container_name: token_db
+    image: postgres:10.4
+    environment:
+      - POSTGRES_DB=TokenStorage
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=0000
+    ports:
+      - "5432:5432"
+    networks:
+      - my_network
+
+  token-redis-cache:
+    container_name: token-redis-cache
+    image: redis:latest
+    environment:
+      - REDIS_PASSWORD=superPassword
+    command: /bin/sh -c 'redis-server --requirepass $${REDIS_PASSWORD}'
+    ports:
+      - "6379:6379"
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    external: true
